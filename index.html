@@ -6,14 +6,14 @@
   <div class="common-drawer-content">
     <p class="common-drawer-subtitle">Explore fun quizzes across categories — earn points and climb the leaderboard!</p>
     <div class="common-category-grid">
-      <div class="common-category-card business" data-url="/business" tabindex="0">💼 <span>Business</span></div>
-      <div class="common-category-card films" data-url="/films-celeb" tabindex="0">🎬 <span>Entertain</span></div>
-      <div class="common-category-card food" data-url="/food" tabindex="0">🍔 <span>Food</span></div>
-      <div class="common-category-card gk" data-url="/general-knowledge" tabindex="0">📚 <span>GK</span></div>
-      <div class="common-category-card politics" data-url="/politics" tabindex="0">🏛️ <span>Politics</span></div>
-      <div class="common-category-card sports" data-url="/sports" tabindex="0">🏅 <span>Sports</span></div>
-      <div class="common-category-card tech" data-url="/tech" tabindex="0">💻 <span>Tech</span></div>
-      <div class="common-category-card world" data-url="/world" tabindex="0">🌍 <span>World</span></div>
+      <div class="common-category-card business" data-url="quiz/daily/business" tabindex="0">💼 <span>Business</span></div>
+      <div class="common-category-card films" data-url="quiz/daily/films-celeb" tabindex="0">🎬 <span>Entertain</span></div>
+      <div class="common-category-card food" data-url="quiz/daily/food" tabindex="0">🍔 <span>Food</span></div>
+      <div class="common-category-card gk" data-url="quiz/daily/general-knowledge" tabindex="0">📚 <span>GK</span></div>
+      <div class="common-category-card politics" data-url="quiz/daily/politics" tabindex="0">🏛️ <span>Politics</span></div>
+      <div class="common-category-card sports" data-url="quiz/daily/sports" tabindex="0">🏅 <span>Sports</span></div>
+      <div class="common-category-card tech" data-url="quiz/daily/tech" tabindex="0">💻 <span>Tech</span></div>
+      <div class="common-category-card world" data-url="quiz/daily/world" tabindex="0">🌍 <span>World</span></div>
     </div>
     <p id="common-drawer-disclaimer" class="common-drawer-disclaimer"></p>
   </div>
@@ -79,6 +79,67 @@
   #common-drawer{width:420px;left:50%;transform:translateX(-50%) translateY(100%);max-height:70vh;border-radius:16px;backdrop-filter:blur(10px);box-shadow:0 10px 40px rgba(0,0,0,.3);}
   #common-drawer.show{transform:translateX(-50%) translateY(0);}
 }
+/* Base Drawer */
+#common-drawer.common-drawer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  max-height: 50vh; /* never exceed 50% screen height */
+  background: linear-gradient(135deg,#fff,#f9fafb,#fff);
+  border-top-left-radius:16px;
+  border-top-right-radius:16px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transform: translateY(100%);
+  pointer-events: none;
+}
+
+/* Animations */
+@keyframes slideUpBounce {
+  0%   { transform: translateY(100%); opacity: 0; }
+  60%  { transform: translateY(-10%); opacity: 1; }
+  80%  { transform: translateY(5%); }
+  100% { transform: translateY(0); }
+}
+@keyframes slideDown {
+  0%   { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
+
+#common-drawer.show {
+  animation: slideUpBounce .6s ease forwards;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #common-drawer.show {
+    animation: none;
+    transform: translateY(0);
+  }
+}
+
+/* === Desktop (centered drawer, still slides from bottom) === */
+@media(min-width:768px){
+  #common-drawer.common-drawer {
+    width: 420px;         /* fixed max width */
+    max-width: 90%;       /* responsive fallback */
+    left: 35%;            /* center horizontally */
+    transform: translate(-50%, 100%); /* start off-screen bottom, centered */
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0,0,0,.3);
+  }
+
+  #common-drawer.show {
+    animation: slideUpBounce .6s ease forwards;
+    transform: translate(-50%, 0); /* slide up to centered bottom */
+    opacity: 1;
+  }
+}
+
 </style>
 
 <script>
@@ -126,9 +187,28 @@
   // Category click handler
   document.querySelectorAll("#common-drawer .common-category-card").forEach(card=>{
     card.addEventListener("click",()=>{
-      const path = card.getAttribute("data-url");
-      if(!path) return;
-      const finalUrl = decodedUrl + path;
+
+         const path = card.getAttribute("data-url");
+          if (!path) return;
+
+          let finalUrl = "";
+
+          if (path.includes("/daily/")) {
+            finalUrl = decodedUrl + path;
+          } else {
+            try {
+              const urlObj = new URL(decodedUrl);
+              finalUrl = urlObj.origin + "/quizzes" + path;
+              let hostname = urlObj.hostname;
+              if (!hostname.startsWith("www.")) {
+                hostname = "www." + hostname.replace(/^.*?\./, ""); 
+              }
+              finalUrl = urlObj.protocol + "//" + hostname + "/quizzes" + path;
+            } catch (e) {
+              // console.error("Invalid decodedUrl:", decodedUrl);
+              return;
+            }
+          }
       const finalWithUtm = addUtm(finalUrl, utmParams);
       sessionStorage.setItem("commonDrawerClosed","1");
       window.open(finalWithUtm,"_blank");
